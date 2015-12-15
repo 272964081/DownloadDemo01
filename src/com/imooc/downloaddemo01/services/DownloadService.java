@@ -20,24 +20,26 @@ public class DownloadService extends Service {
 
 	public static final String ACTION_START = "ACTION_START";
 	public static final String ACTION_STOP = "ACTION_STOP";
+	public static final String ACTION_UPDATE = "ACTION_UPDATE";
 	public static final String DOWNLOAD_PATH = Environment
 			.getExternalStorageDirectory().getAbsolutePath() + "/downloads/";
 
 	public static final int MSG_INIT = 0x001;
+	
+	private DownloadTask mTask = null;
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		// TODO Auto-generated method stub
 		FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("fileInfo");
 		if (ACTION_START.equals(intent.getAction())) {
-
-			Log.i("lang", "start:" + fileInfo.toString());
-
+			//启动下载
 			new initThread(fileInfo).start();
 
 		} else if (ACTION_STOP.equals(intent.getAction())) {
-
-			Log.i("lang", "stop:" + fileInfo.toString());
+			//暂停下载
+			if(mTask!=null){
+				mTask.setPause(true);
+			}
 		}
 		return super.onStartCommand(intent, flags, startId);
 	}
@@ -52,7 +54,10 @@ public class DownloadService extends Service {
 			switch (msg.what) {
 			case MSG_INIT:
 				FileInfo mFileInfo = (FileInfo) msg.obj;
-				Log.i("lang", "handler:" + mFileInfo.toString());
+				//启动下载
+				mTask= new DownloadTask(DownloadService.this, mFileInfo);
+				mTask.download();
+				
 				break;
 
 			default:
@@ -106,6 +111,7 @@ public class DownloadService extends Service {
 				raf.setLength(length);
 				// 设置文件长度，并通知主线程
 				mFileInfo.setLength(length);
+				
 				mHandler.obtainMessage(MSG_INIT, mFileInfo).sendToTarget();
 
 			} catch (MalformedURLException e) {
