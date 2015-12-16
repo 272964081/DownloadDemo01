@@ -56,13 +56,12 @@ public class DownloadTask {
 		List<ThreadInfo> threads = mThreadDAO.getThread(mFileInfo.getUrl());
 		ThreadInfo threadInfo = null;
 		if (threads.size() == 0) {
-			
 			//初始化线程信息
 			threadInfo = new ThreadInfo(mFileInfo.getId(), mFileInfo.getUrl(),
 					0, mFileInfo.getLength(),0);
 		}else{
 			threadInfo = threads.get(0);
-			mFileInfo.setFinished(threadInfo.getFinished());
+//			mFileInfo.setFinished(threadInfo.getFinished());
 		}
 		//创建子线程，进行下载
 		new Thread(new DownloadThread(threadInfo)).start();
@@ -106,7 +105,7 @@ public class DownloadTask {
 				raf = new RandomAccessFile(file, "rwd");
 				raf.seek(start);
 				Intent intent = new Intent(DownloadService.ACTION_UPDATE);
-				mFinished += mFileInfo.getFinished();
+				mFinished += mThreadInfo.getFinished();
 				// 开始下载
 				if (conn.getResponseCode() == HttpStatus.SC_PARTIAL_CONTENT) {
 					// 读取数据
@@ -118,6 +117,7 @@ public class DownloadTask {
 						raf.write(buffer, 0, len);
 						mFinished += len;
 							int progress = (int) (mFinished * 100/ mFileInfo.getLength());
+							
 							intent.putExtra("finished", progress);
 							mContext.sendBroadcast(intent);
 						// 下载暂停时保存下载进度
