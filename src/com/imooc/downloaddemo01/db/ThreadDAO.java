@@ -19,7 +19,7 @@ public interface ThreadDAO {
 	 * @param url filepath
 	 * @param thread_id  threadId
 	 */
-	public void delete(String url,int thread_id);
+	public void delete(String url);
 	/**
 	 * 更新线程下载进度
 	 * @param url

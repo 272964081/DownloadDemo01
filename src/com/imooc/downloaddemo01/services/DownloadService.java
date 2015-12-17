@@ -6,13 +6,14 @@ import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
-import android.util.Log;
 
 import com.imooc.downloaddemo01.model.FileInfo;
 
@@ -21,25 +22,35 @@ public class DownloadService extends Service {
 	public static final String ACTION_START = "ACTION_START";
 	public static final String ACTION_STOP = "ACTION_STOP";
 	public static final String ACTION_UPDATE = "ACTION_UPDATE";
+	public static final String ACTION_FINISHED = "ACTION_FINISHED";
 	public static final String DOWNLOAD_PATH = Environment
 			.getExternalStorageDirectory().getAbsolutePath() + "/downloads/";
+	public static final int THREAD_COUNT = 3; //下载线程数
 
 	public static final int MSG_INIT = 0x001;
 	
-	private DownloadTask mTask = null;
+	private InitThread mInitThread = null;
+	
+//	private DownloadTask mTask = null;
+	private Map<Integer,DownloadTask> mTasks = new LinkedHashMap<Integer,DownloadTask>();
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("fileInfo");
 		if (ACTION_START.equals(intent.getAction())) {
 			//启动下载
-			new initThread(fileInfo).start();
+			mInitThread = new InitThread(fileInfo);
+//			mInitThread.start();
+			DownloadTask.sExecutorService.execute(mInitThread);
 
 		} else if (ACTION_STOP.equals(intent.getAction())) {
 			//暂停下载
-			if(mTask!=null){
+			int id = fileInfo.getId();
+			if(mTasks!=null){
+				DownloadTask mTask = mTasks.get(id);
 				mTask.setPause(true);
 			}
+			
 		}
 		return super.onStartCommand(intent, flags, startId);
 	}
@@ -55,12 +66,9 @@ public class DownloadService extends Service {
 			case MSG_INIT:
 				FileInfo mFileInfo = (FileInfo) msg.obj;
 				//启动下载
-				mTask= new DownloadTask(DownloadService.this, mFileInfo);
+				DownloadTask mTask= new DownloadTask(DownloadService.this, mFileInfo,THREAD_COUNT);
 				mTask.download();
-				
-				break;
-
-			default:
+				mTasks.put(mFileInfo.getId(), mTask);
 				break;
 			}
 		}
@@ -73,10 +81,10 @@ public class DownloadService extends Service {
 	 *
 	 */
 
-	class initThread extends Thread {
+	class InitThread extends Thread {
 		private FileInfo mFileInfo;
 
-		public initThread(FileInfo mFileInfo) {
+		public InitThread(FileInfo mFileInfo) {
 			this.mFileInfo = mFileInfo;
 		}
 

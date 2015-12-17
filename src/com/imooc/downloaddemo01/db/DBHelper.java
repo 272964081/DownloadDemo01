@@ -5,7 +5,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 public class DBHelper extends SQLiteOpenHelper {
-
+	
+	
+	public static DBHelper sHelper = null;
 	public static final String DB_NAME = "download.db";
 	public static final int VERSION = 1;
 	// 创建数据库的SQL语法
@@ -14,8 +16,18 @@ public class DBHelper extends SQLiteOpenHelper {
 	// 删除数据库的语法
 	public static final String SQL_DROP = "drop table if exists thread_info";
 
-	public DBHelper(Context context) {
+	private DBHelper(Context context) {
 		super(context, DB_NAME, null, VERSION);
+	}
+	/**
+	 * 单例模式
+	 */
+	public static DBHelper getInstance(Context context){
+		if(sHelper==null){
+			sHelper = new DBHelper(context);
+		}
+		
+		return sHelper;
 	}
 
 	@Override
